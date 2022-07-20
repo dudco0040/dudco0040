@@ -16,6 +16,7 @@ from torch._utils import _accumulate
 import torchvision.transforms as transforms
 
 
+#배치의 데이터 비율 균형 설정을 위한 class
 class Batch_Balanced_Dataset(object):
 
     def __init__(self, opt):  #class 내부에서 사용하면 객체를 생성할 때 처리한 내용을 작성 가능
@@ -110,9 +111,10 @@ class Batch_Balanced_Dataset(object):
             # 더미 태그 데이터 세트를 샘플링하지 않고, 현재 더미 태그 데이터 세트를 포함하도록 요청하면 건너뜁니다.
             if i == len(self.dataloader_iter_list) - 1 and no_pseudo and self.has_pseudo_label_dataset(): continue 
             try:
-                image, text = data_loader_iter.next()
-                balanced_batch_images.append(image)
-                balanced_batch_texts += text
+                image, text = data_loader_iter.next()  #데이터 넘어가면서 
+                balanced_batch_images.append(image)  #빈리스트에 이미지 추가
+                balanced_batch_texts += text         #빈 리스트에 텍스트 추가
+                
             #데이터셋 이미지 수가 부족하면 반복기를 다시 구축하여 훈련합니다.
             except StopIteration:  
                 self.dataloader_iter_list[i] = iter(self.data_loader_list[i])
@@ -123,19 +125,20 @@ class Batch_Balanced_Dataset(object):
             except ValueError:
                 pass
 
-        balanced_batch_images = torch.cat(balanced_batch_images, 0)
+        balanced_batch_images = torch.cat(balanced_batch_images, 0)  # torch.cat: 한 줄로 텐서 쌓기(dim=0)
 
         return balanced_batch_images, balanced_batch_texts
     
     def get_meta_test_batch(self, meta_target_index=-1): # meta_target_index가 지정되면 meta_target_index 데이터 집합은 무시됩니다
         
-        if meta_target_index == self.opt.source_num:
+        # target domain 정하기
+        if meta_target_index == self.opt.source_num:   #source_num = 4
             assert len(self.data_loader_list) == self.opt.source_num + 1, 'There is no target dataset'
         balanced_batch_images = []
         balanced_batch_texts = []
 
-        for i, data_loader_iter in enumerate(self.dataloader_iter_list):
-            if i == meta_target_index:
+        for i, data_loader_iter in enumerate(self.dataloader_iter_list):  #data_loader_iter: 5개 도메인, 
+            if i == meta_target_index:  #지정한 target domain과 같을 시
                 try:
                     image, text = data_loader_iter.next()
                     balanced_batch_images.append(image)
@@ -148,15 +151,15 @@ class Batch_Balanced_Dataset(object):
                 except ValueError:
                     pass
         # print(balanced_batch_images[0].shape)
-        balanced_batch_images = torch.cat(balanced_batch_images, 0)
+        balanced_batch_images = torch.cat(balanced_batch_images, 0)  # torch.cat: 한 줄로 텐서 쌓기(dim=0)
 
         return balanced_batch_images, balanced_batch_texts
     
-    #target domain dataset 추가
+    #target domain dataset 더하기
     def add_target_domain_dataset(self, dataset, opt):
-        _AlignCollate = AlignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio_with_pad=opt.PAD)
-        avg_batch_size = opt.batch_size // opt.source_num
-        batch_size = len(dataset) if len(dataset) <= avg_batch_size else avg_batch_size
+        _AlignCollate = AlignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio_with_pad=opt.PAD) #***  imgH=32, imgW=100, keep_ratio_with_pad=False
+        avg_batch_size = opt.batch_size // opt.source_num   #평균 배치 사이즈 96/4 = 24
+        batch_size = len(dataset) if len(dataset) <= avg_batch_size else avg_batch_size  #평균 배치 사이즈와 비교(평균보다 크지 않도록)
         self_training_loader = torch.utils.data.DataLoader(
                         dataset, batch_size=batch_size,
                         shuffle=True,  # 'True' to check training progress with validation function. 
@@ -169,13 +172,13 @@ class Batch_Balanced_Dataset(object):
             self.data_loader_list.append(self_training_loader)
             self.dataloader_iter_list.append(iter(self_training_loader))
     
-    #  데이터 셋에 pseudo 라벨 추가 input data 형태는?
+    #  데이터 셋에 pseudo 라벨 추가(위의 방법이랑 유사)
     def add_pseudo_label_dataset(self, dataset, opt):   
-        avg_batch_size = opt.batch_size // opt.source_num  #배치 사이즈 
+        avg_batch_size = opt.batch_size // opt.source_num  #평균 배치 사이즈 96/4 = 24
         batch_size = len(dataset) if len(dataset) <= avg_batch_size else avg_batch_size
         self_training_loader = torch.utils.data.DataLoader(
                         dataset, batch_size=batch_size,
-                        shuffle=True,  # 'True' to check training progress with validation function.
+                        shuffle=True,  # validation function를 통해 교육 진행 상황을 점검하는 '참'.
                         num_workers=int(opt.workers), pin_memory=False, collate_fn=self_training_collate)
         if self.has_pseudo_label_dataset():
             self.data_loader_list[opt.source_num] = self_training_loader
@@ -190,7 +193,7 @@ class Batch_Balanced_Dataset(object):
         batch_size = len(dataset) if len(dataset) <= avg_batch_size else avg_batch_size
         self_training_loader = torch.utils.data.DataLoader(
                         dataset, batch_size=batch_size,
-                        shuffle=True,  # 'True' to check training progress with validation function.
+                        shuffle=True,  # validation function를 통해 교육 진행 상황을 점검하는 '참'.
                         num_workers=int(opt.workers), pin_memory=False, collate_fn=self_training_collate)
         if self.has_residual_pseudo_label_dataset():
             self.data_loader_list[opt.source_num + 1] = self_training_loader
@@ -228,7 +231,7 @@ class Batch_Balanced_Sampler(object):
             self.counter += 1
         
 #--------------------------------------------------------------------------------------------------------------------Class Batch_Balanced_Sampler
-#위에랑 같은 Class..? + a
+#위에랑 같은 Class..?+ a (hierarchical_dataset,,LmdbDataset,RawDataset,ResizeNormalize,self_training, tersor2im, ...)
 
 class Batch_Balanced_Dataset0(object):
 
@@ -386,8 +389,9 @@ class Batch_Balanced_Dataset0(object):
         return True if self.pseudo_dataloader else False
 
 
-def hierarchical_dataset(root, opt, select_data='/', pseudo=False):
-    """ select_data='/' contains all sub-directory of root directory """
+#계층 군집 분석
+def hierarchical_dataset(root, opt, select_data='/', pseudo=False):  
+    """ select_data='/' contains all sub-directory of root directory """  #select_data=filename'은(는) 루트 디렉토리의 모든 하위 디렉토리를 포함합니다.
     dataset_list = []
     dataset_log = f'dataset_root:    {root}\t dataset: {select_data[0]}'
     print(dataset_log)
@@ -512,7 +516,7 @@ class LmdbDataset(Dataset):
         return (img, label)
 
 
-class RawDataset(Dataset):  
+class RawDataset(Dataset):    
 
     def __init__(self, root, opt):
         self.opt = opt
@@ -550,13 +554,14 @@ class RawDataset(Dataset):
 
         return (img, self.image_path_list[index])
 
+
 #크기 조정 정규화
-class ResizeNormalize(object):  
+class ResizeNormalize(object):    
 
     def __init__(self, size, interpolation=Image.BICUBIC):
         self.size = size
         self.interpolation = interpolation
-        self.toTensor = transforms.ToTensor()
+        self.toTensor = transforms.ToTensor()  #tensor로 변환
 
     def __call__(self, img):
         img = img.resize(self.size, self.interpolation)
@@ -564,7 +569,8 @@ class ResizeNormalize(object):
         img.sub_(0.5).div_(0.5)
         return img
 
-class NormalizePAD(object):  # padding
+# padding 
+class NormalizePAD(object):  
 
     def __init__(self, max_size, PAD_type='right'):
         self.toTensor = transforms.ToTensor()
@@ -584,7 +590,7 @@ class NormalizePAD(object):  # padding
         return Pad_img
 
 
-class AlignCollate(object):
+class AlignCollate(object): 
 
     def __init__(self, imgH=32, imgW=100, keep_ratio_with_pad=False):
         self.imgH = imgH
@@ -611,7 +617,7 @@ class AlignCollate(object):
 
                 resized_image = image.resize((resized_w, self.imgH), Image.BICUBIC)
                 resized_images.append(transform(resized_image))
-                # resized_image.save('./image_test/%d_test.jpg' % w)
+                # resized_image.save('./image_test/%d_test.jpg' % w)  
 
             image_tensors = torch.cat([t.unsqueeze(0) for t in resized_images], 0)
 
@@ -622,7 +628,6 @@ class AlignCollate(object):
 
         return image_tensors, labels
 
-
 def self_training_collate(batch):
     imgs, labels = [], []
     for img, label in batch:
@@ -631,6 +636,7 @@ def self_training_collate(batch):
     
     return torch.stack(imgs), labels  # 새로운 차원으로 주어진 텐서들을 붙임(image) 3차원
 
+# self training을 위한 데이터셋
 class SelfTrainingDataset(Dataset):
     def __init__(self, imgs, labels):
         self.imgs = imgs
@@ -649,7 +655,7 @@ def tensor2im(image_tensor, imtype=np.uint8):
     image_numpy = image_tensor.cpu().float().numpy()
     if image_numpy.shape[0] == 1:
         image_numpy = np.tile(image_numpy, (3, 1, 1))
-    image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
+    image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0   #최종 이미지 shape?
     return image_numpy.astype(imtype)
 
 

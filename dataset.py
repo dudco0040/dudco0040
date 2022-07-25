@@ -281,7 +281,6 @@ class Batch_Balanced_Dataset0(object):
             ex) opt.total_data_data_details = 1은 100% 사용량을 나타내고 0.2는 20% 사용량을 나타냅니다.
             본 문서의 4.2 섹션을 참조하십시오.
             """
-            """
             number_dataset = int(total_number_dataset * float(opt.total_data_usage_ratio)) # 사용된 비율
             if opt.fix_dataset_num != -1: number_dataset = opt.fix_dataset_num
             dataset_split = [number_dataset, total_number_dataset - number_dataset] # List[int] e.g. [50, 50]
@@ -391,14 +390,15 @@ class Batch_Balanced_Dataset0(object):
 
 #계층 군집 분석
 def hierarchical_dataset(root, opt, select_data='/', pseudo=False):  
-    """ select_data='/' contains all sub-directory of root directory """  #select_data=filename'은(는) 루트 디렉토리의 모든 하위 디렉토리를 포함합니다.
+    """ select_data='/' contains all sub-directory of root directory   #select_data=filename'은(는) 루트 디렉토리의 모든 하위 디렉토리를 포함합니다.
+            """
     dataset_list = []
     dataset_log = f'dataset_root:    {root}\t dataset: {select_data[0]}'
     print(dataset_log)
     dataset_log += '\n'
     for dirpath, dirnames, filenames in os.walk(root+'/', followlinks=True):
         print(dirpath, dirnames, filenames)
-        if not dirnames:  # dirnames가 비어 있을 때, 즉 현재 dirpath 아래에 lmdb 파일만 포함되어 있을 때 동작합니다.
+        if not dirnames:   # dirnames가 비어 있을 때, 즉 현재 dirpath 아래에 lmdb 파일만 포함되어 있을 때 동작합니다.
             select_flag = False
             for selected_d in select_data: # select_data는 문자열, e.g. 'MJ', 'ST'
                 
@@ -415,7 +415,7 @@ def hierarchical_dataset(root, opt, select_data='/', pseudo=False):
                 dataset_list.append(dataset)
 
     # 모든 데이터 세트를 결합합니다. 예를 들어, dataset_list에는 MJ_train, MJ_valid, MJ_test가 포함되어 있습니다.
-    concatenated_dataset = ConcatDataset(dataset_list)
+    concatenated_dataset = ConcatDataset(dataset_list) 
 
     return concatenated_dataset, dataset_log
 

@@ -15,6 +15,7 @@ class CTCLabelConverter(object):
             self.dict[char] = i + 1
 
         self.character = ['[CTCblank]'] + dict_character  # CTCloss에 대한 더미 '[CTCblank]' 토큰(인덱스 0)
+        # 0 + character? 
 
     def encode(self, text, batch_max_length=25):
         """텍스트 레이블을 텍스트 인덱스로 변환합니다.
@@ -26,9 +27,9 @@ class CTCLabelConverter(object):
             text: CTLoss에 대한 텍스트 인덱스. [batch_size, batch_max_length] 
             length: 각 텍스트의 길이입니다. [sig_size]
         """
-        length = [len(s) for s in text]
+        length = [len(s) for s in text]  # 각 텍스트 레이블의 길이를 구해서 저장 
 
-        # 패딩에 사용되는 지수(=0)는 CTC 손실 계산에 영향을 미치지 않습니다. 모든 label 동일 길이, 여유자리는 0으로 채움
+        # 패딩에 사용되는 지수(=0)는 CTC loss 계산에 영향을 미치지 않습니다. 모든 label 동일 길이, 여유자리는 0으로 채움
         batch_text = torch.LongTensor(len(text), batch_max_length).fill_(0)
         for i, t in enumerate(text):
             text = list(t)
@@ -43,7 +44,7 @@ class CTCLabelConverter(object):
             t = text_index[index, :]
 
             char_list = []
-            for i in range(l):
+            for i in range(l): 
                 if t[i] != 0 and (not (i > 0 and t[i - 1] == t[i])):  # 반복된 문자와 공백을 제거합니다.
                     char_list.append(self.character[t[i]])
             text = ''.join(char_list)
@@ -64,10 +65,10 @@ class CTCLabelConverterForBaiduWarpctc(object):
             # NOTE: 0 is reserved for 'CTCblank' token required by CTCLoss
             self.dict[char] = i + 1
 
-        self.character = ['[CTCblank]'] + dict_character  # dummy '[CTCblank]' token for CTCLoss (index 0)
+        self.character = ['[CTCblank]'] + dict_character  # CTCloss에 대한 더미 '[CTCblank]' 토큰(인덱스 0)
 
     def encode(self, text, batch_max_length=25):
-        """텍스트 레이블을 텍스트 색인으로 변환합니다.
+        """텍스트 레이블을 텍스트 인덱스로 변환합니다.
         input:
             text: 각 이미지의 텍스트 레이블입니다. [sig_size]
         output:

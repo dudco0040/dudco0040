@@ -47,7 +47,9 @@ def run_flask_restfull_api(args):
             #return dict
             #
             dict_list = []
-            room = df['M_ID'][0]  # room에 따라 파일이 따로 저장되므로 M_ID의 값은 모두 같은 값.
+            r = df['M_ID'][0]  # room에 따라 파일이 따로 저장되므로 M_ID의 값은 모두 같은 값.
+            room = "R0{}".format(r)
+
             print('room',room)
             for temp in df['Temp']:  # 임의로 컬럼명은 temp(test_df)로 지정 -> 컬럼명도 추후에 ini 파일로 설정해서 사용해도 좋을 듯 .
                 print(temp)

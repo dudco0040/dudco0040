@@ -1,3 +1,5 @@
-# python repository
+# My Repository :D
 
-python practice file upload
+- Study Python
+- Upload Python practice files
+- 내맘대로 뒤죽박죽
